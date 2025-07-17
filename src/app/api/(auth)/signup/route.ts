@@ -25,7 +25,15 @@ export async function POST(req: Request) {
     });
     await newUser.save();
     return NextResponse.json(
-      { message: "User created successfully" },
+      {
+        message: "User created successfully",
+        user: {
+          _id: newUser._id,
+          name: newUser.name,
+          email: newUser.email,
+          verified: newUser.verified,
+        },
+      },
       { status: 201 }
     );
   } catch (err) {

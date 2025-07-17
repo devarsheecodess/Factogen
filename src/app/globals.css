@@ -121,6 +121,10 @@
   color: #774b8e;
 }
 
+.purple_theme_bg {
+  background-color: #774b8e;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
