@@ -13,11 +13,12 @@ export const loginAtom = atom({
   password: "",
 });
 
-export const OTPAtom = atom("");
-
 export const userOTPAtom = atom({
   _id: "",
   name: "",
   email: "",
   verified: false,
 });
+
+export const OTPAtom = atom(0);
+export const UserOTPInputAtom = atom(0);

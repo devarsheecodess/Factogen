@@ -1,7 +1,12 @@
 "use client";
 import { useAtom } from "jotai";
 import { REGEXP_ONLY_DIGITS_AND_CHARS } from "input-otp";
-import { OTPAtom, userOTPAtom } from "@/lib/atoms";
+import {
+  OTPAtom,
+  userOTPAtom,
+  loadingAtom,
+  UserOTPInputAtom,
+} from "@/lib/atoms";
 import { useEffect } from "react";
 import {
   InputOTP,
@@ -9,32 +14,28 @@ import {
   InputOTPSeparator,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
-import { loadingAtom } from "@/lib/atoms";
 import axios from "axios";
+import { set } from "mongoose";
 
 export default function VerifyEmail() {
   const [OTP, setOTP] = useAtom(OTPAtom);
-  const [user, setUser] = useAtom(userOTPAtom);
+  const [userOTP, setUserOTP] = useAtom(UserOTPInputAtom);
   const [loading, setLoading] = useAtom(loadingAtom);
 
-  //   useEffect(() => {
-  //     const storedUser = localStorage.getItem("user");
-  //     if (storedUser) {
-  //       const parsedUser = JSON.parse(storedUser);
-  //       setUser(parsedUser);
-  //       if (parsedUser.verified) {
-  //         window.location.href = "/dashboard";
-  //         return;
-  //       }
-  //       getOTP();
-  //     } else window.location.href = "/signup";
-  //   }, [user]);
-
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
-      console.log(OTP);
+      console.log(userOTP);
+      const userInfo = JSON.parse(localStorage.getItem("user") || "{}");
+      const response = await axios.post("/api/signup/check-otp", {
+        _id: userInfo._id,
+        OTP: userOTP,
+      });
+      if (response.status === 200) {
+        alert("OTP verified successfully!");
+        window.location.href = "/dashboard";
+      }
     } catch (err) {
       alert("Please try again");
     } finally {
@@ -42,9 +43,33 @@ export default function VerifyEmail() {
     }
   };
 
-  const getOTP = async () => {
-    await axios.post("/api/auth/otp", { _id: user._id });
+  const getOTP = async (id: string, email: string) => {
+    const response = await axios.post("/api/signup/get-otp", {
+      _id: id,
+      email: email,
+    });
+    if (response.status === 201) {
+      alert("User is already verified");
+      window.location.href = "/dashboard";
+      return;
+    }
+    setOTP(response.data.OTP);
   };
+
+  useEffect(() => {
+    const userInfo = JSON.parse(localStorage.getItem("user") || "{}");
+    if (userInfo.verified) {
+      window.location.href = "/dashboard";
+      return;
+    }
+    if (!userInfo._id) {
+      console.log(userInfo);
+      console.log(userInfo.email);
+      alert("User ID is not available");
+      return;
+    }
+    getOTP(userInfo._id, userInfo.email);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 flex items-center justify-center p-8">
@@ -72,7 +97,7 @@ export default function VerifyEmail() {
             <InputOTP
               maxLength={6}
               pattern={REGEXP_ONLY_DIGITS_AND_CHARS}
-              onChange={(value) => setOTP(value)}
+              onChange={(value) => setUserOTP(value)}
             >
               <InputOTPGroup>
                 <InputOTPSlot index={0} className="text-white" />
